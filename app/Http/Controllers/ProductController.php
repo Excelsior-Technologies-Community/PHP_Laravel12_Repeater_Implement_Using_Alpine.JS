@@ -8,20 +8,20 @@ use Illuminate\Support\Facades\File;
 
 class ProductController extends Controller
 {
-    // ✅ INDEX
+    // INDEX
     public function index()
     {
-        $products = Product::latest()->get();
+        $products = Product::orderBy('id', 'asc')->get();
         return view('products.index', compact('products'));
     }
 
-    // ✅ CREATE
+    // CREATE
     public function create()
     {
         return view('products.create');
     }
 
-    // ✅ STORE
+    // STORE
     public function store(Request $request)
     {
         $request->validate([
@@ -34,13 +34,18 @@ class ProductController extends Controller
         $imagePaths = [];
 
         if ($request->hasFile('images')) {
+
             foreach ($request->file('images') as $image) {
+
+                if (!$image) continue;
+
                 $name = time() . '_' . $image->getClientOriginalName();
+
                 $image->move(public_path('uploads'), $name);
+
                 $imagePaths[] = 'uploads/' . $name;
             }
         }
-
         Product::create([
             'name' => $request->name,
             'description' => $request->description,
@@ -52,19 +57,19 @@ class ProductController extends Controller
             ->with('success', 'Product Created!');
     }
 
-    // ✅ SHOW (MISSING BEFORE)
+    // SHOW (MISSING BEFORE)
     public function show(Product $product)
     {
         return view('products.show', compact('product'));
     }
 
-    // ✅ EDIT
+    // EDIT
     public function edit(Product $product)
     {
         return view('products.edit', compact('product'));
     }
 
-    // ✅ UPDATE
+    // UPDATE
     public function update(Request $request, Product $product)
     {
         $imagePaths = $product->images ?? [];
@@ -88,7 +93,7 @@ class ProductController extends Controller
             ->with('success', 'Product Updated!');
     }
 
-    // ✅ DELETE
+    // DELETE
     public function destroy(Product $product)
     {
         if (!empty($product->images)) {
@@ -123,4 +128,14 @@ class ProductController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function search(Request $request)
+    {
+        $query = $request->get('query');
+
+        $products = Product::where('name', 'LIKE', "%{$query}%")
+            ->orderBy('id', 'asc')
+            ->get();
+
+        return response()->json($products);
+    }
 }
